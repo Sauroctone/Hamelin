@@ -1,7 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "RatManager.h"
-#include "RatsAI/RatCharacter.h"
 #include "RatsAI/RatAIController.h"
 #include "Runtime/Engine/Classes/Engine/World.h"
 #include "Engine.h"
@@ -16,27 +15,22 @@ ARatManager::ARatManager()
 
 void ARatManager::Debug()
 {
-	if (SpawnTarget->IsValidLowLevel())
-	{
-		CreateRat(SpawnTarget);
-		GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Yellow, "RATS !");
-	}
+	
 }
 
 // Called when the game starts or when spawned
 void ARatManager::BeginPlay()
 {
 	Super::BeginPlay();
-	Debug();
 }
 
 void ARatManager::CreateRat(AActor* TargetPoint)
 {
+	//Spawn RatCharacterBP and store a reference to it's RatAIController (Autopossessed when spawned)
 	FActorSpawnParameters SpawnInfo;
-	ACharacter* RatCharacter = GetWorld()->SpawnActor<ARatCharacter>(TargetPoint->GetActorLocation(), TargetPoint->GetActorRotation(), SpawnInfo);
-	ARatAIController* RatController = NewObject<ARatAIController>(this);
-	RatController->Possess(RatCharacter);
-
+	ACharacter* RatCharacter = GetWorld()->SpawnActor<ARatCharacter>(RatCharacterBP, TargetPoint->GetActorLocation(), TargetPoint->GetActorRotation(), SpawnInfo);
+	
+	ARatAIController* RatController = Cast<ARatAIController>(RatCharacter->GetController());
 	DanglingRats.Add(RatController);
 }
 
@@ -49,6 +43,14 @@ void ARatManager::DestroyRat(ARatAIController* DestroyedRat)
 void ARatManager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	timer += DeltaTime;
+	if (timer >= SpawnRate)
+	{
+		timer = 0;
+		CreateRat(SpawnTarget);
+		Debug();
+	}
 
 }
 

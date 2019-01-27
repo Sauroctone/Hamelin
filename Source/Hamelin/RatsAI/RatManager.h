@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "RatsAI/RatAIController.h"
+#include "RatsAI/RatCharacter.h"
 #include "RatManager.generated.h"
 
 
@@ -26,13 +27,26 @@ class HAMELIN_API ARatManager : public AActor
 		//Debug
 		void Debug();
 
-		UPROPERTY(EditAnywhere)
+
+		UPROPERTY(EditAnywhere, Category = "Spawning Rats")
+			TSubclassOf<ARatCharacter> RatCharacterBP;
+		UPROPERTY(EditAnywhere, Category = "Spawning Rats")
 			AActor* SpawnTarget;
+		UPROPERTY(EditAnywhere, Category = "Spawning Rats")
+			float SpawnRate;
+
+		UPROPERTY(EditAnywhere, Category = "AIControllerDebug")
+			AActor* MoveTarget;
+
+
 
 	protected:
 		// Called when the game starts or when spawned
 		virtual void BeginPlay() override;
 		TArray<ARatAIController*> ControlledRats;
 		TArray<ARatAIController*> DanglingRats;
+
+		float timer = 0;
+
 
 };
