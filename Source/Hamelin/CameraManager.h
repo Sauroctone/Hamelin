@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "FluteManager.h"
 #include "CameraManager.generated.h"
 
 UCLASS()
@@ -45,33 +46,45 @@ public:
 	float ZoomInSpeedZ;
 	UPROPERTY(EditAnywhere)
 	float ZoomInSpeedX;
+	
+	UPROPERTY(BlueprintReadOnly)
+	FVector2D PlayerScreenLoc;
+	UPROPERTY(BlueprintReadOnly)
+	FVector2D FirstScreenLoc;
+	UPROPERTY(BlueprintReadOnly)
+	FVector2D SecondScreenLoc;
+	
+	UPROPERTY(BlueprintReadOnly)
+	int screenWidth;
+	UPROPERTY(BlueprintReadOnly)
+	int screenHeight;
+
+	UFUNCTION()
+	void OnFocused(bool _isFocused);
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 private:
-	APlayerController * PlayerController;
+	APlayerController* PlayerController;
+	AFluteManager* FluteMan;
 	FVector TargetLocation;
 	FVector PlayerLocation;
 	FVector FirstLocation;
 	FVector SecondLocation;
 	FVector AverageLocation;
-	FVector2D PlayerScreenLoc;
-	FVector2D FirstScreenLoc;
-	FVector2D SecondScreenLoc;
 	int targetCount;
-	int screenWidth;
-	int screenHeight;
 	bool mustZoomOut;
-	bool mustZoomIn;
 	FVector ZoomOffset;
 	FVector FinalOffset;
+	int targetsAtCenter;
+	bool isFocused;
 
 	void SetAverageTargetLocation();
 	void CheckScreenLocation(FVector _worldLoc, FVector2D &_screenLoc);
 	bool IsTowardsEdgeOfScreen(FVector2D _screenLoc);
-	bool IsTowardsCenterOfScreen(FVector2D _screenLoc);
+	int IsTowardsCenterOfScreen(FVector2D _screenLoc);
 	void ZoomOut(float DeltaTime);
 	void ZoomIn(float DeltaTime);
 

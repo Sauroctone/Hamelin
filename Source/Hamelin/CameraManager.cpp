@@ -5,6 +5,8 @@
 #include "Camera/CameraActor.h"
 #include "EngineMinimal.h"
 #include "Engine/Public/DrawDebugHelpers.h"
+#include "Engine.h"
+#include "CustomGameInstance.h"
 
 // Sets default values
 ACameraManager::ACameraManager()
@@ -30,6 +32,15 @@ void ACameraManager::BeginPlay()
 
 	PlayerController = GetWorld()->GetFirstPlayerController();
 	PlayerController->GetViewportSize(screenWidth, screenHeight);
+
+	UCustomGameInstance* SGI = nullptr;
+	if (GetWorld())
+		SGI = Cast<UCustomGameInstance>(GetWorld()->GetGameInstance());
+	if (SGI)
+	{
+		FluteMan = SGI->FluteMan;
+		FluteMan->OnFocused.AddDynamic(this, &ACameraManager::OnFocused);
+	}	
 }
 
 void ACameraManager::SetAverageTargetLocation()
@@ -44,7 +55,7 @@ void ACameraManager::CheckScreenLocation(FVector _worldLoc, FVector2D &_screenLo
 {
 	PlayerController->ProjectWorldLocationToScreen(_worldLoc, _screenLoc);
 	mustZoomOut = IsTowardsEdgeOfScreen(_screenLoc);
-	mustZoomIn = mustZoomOut ? false : IsTowardsCenterOfScreen(_screenLoc);
+	targetsAtCenter += mustZoomOut ? 0 : IsTowardsCenterOfScreen(_screenLoc);
 }
 
 bool ACameraManager::IsTowardsEdgeOfScreen(FVector2D _screenLoc)
@@ -56,25 +67,33 @@ bool ACameraManager::IsTowardsEdgeOfScreen(FVector2D _screenLoc)
 	return false;
 }
 
-bool ACameraManager::IsTowardsCenterOfScreen(FVector2D _screenLoc)
+int ACameraManager::IsTowardsCenterOfScreen(FVector2D _screenLoc)
 {
 	if (_screenLoc.X > 0 - screenWidth / ZoomInScreenDivisor || _screenLoc.X < 0 + screenWidth / ZoomInScreenDivisor || _screenLoc.Y > 0 + screenHeight / ZoomInScreenDivisor || _screenLoc.Y < 0 + screenHeight / ZoomInScreenDivisor)
 	{
-		return true;
+		return 1;
 	}
-	return false;
+	return 0;
 }
 
 void ACameraManager::ZoomOut(float DeltaTime)
 {
 	ZoomOffset.Z += ZoomOutSpeedZ * DeltaTime;
 	ZoomOffset.X -= ZoomOutSpeedX * DeltaTime;
+	/*UKismetSystemLibrary::PrintString(GetWorld(), "zoom out", false, true, FColor::Yellow, .1f);*/
 }
 
 void ACameraManager::ZoomIn(float DeltaTime)
 {
 	ZoomOffset.Z -= ZoomInSpeedZ * DeltaTime;
 	ZoomOffset.X += ZoomInSpeedX * DeltaTime;
+	/*UKismetSystemLibrary::PrintString(GetWorld(), "zoom in", false, true, FColor::Yellow, .1f);*/
+}
+
+void ACameraManager::OnFocused(bool _isFocused)
+{
+	isFocused = _isFocused;
+	UKismetSystemLibrary::PrintString(GetWorld(), isFocused ? "FOCUSED" : "NOT FOCUSED", false, true, FColor::Yellow, .1f);
 }
 
 // Called every frame
@@ -82,25 +101,31 @@ void ACameraManager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	SetAverageTargetLocation();
+	if (!isFocused)
+	{
+		PlayerController->GetViewportSize(screenWidth, screenHeight);
+		//UKismetSystemLibrary::PrintString(GetWorld(), FString::FromInt(screenWidth), false, true, FColor::Yellow, .1f);
+		//UKismetSystemLibrary::PrintString(GetWorld(), FString::FromInt(screenHeight), false, true, FColor::Yellow, .1f);
 
-	CheckScreenLocation(PlayerLocation, PlayerScreenLoc);
-	if (FirstCameraTarget)
-		CheckScreenLocation(FirstLocation, FirstScreenLoc);
-	if (SecondCameraTarget)
-		CheckScreenLocation(SecondLocation, SecondScreenLoc);
+		SetAverageTargetLocation();
 
-	if (mustZoomOut)
-		ZoomOut(DeltaTime);
-	else if (mustZoomIn)
-		ZoomIn(DeltaTime);
+		targetsAtCenter = 0;
+		CheckScreenLocation(PlayerLocation, PlayerScreenLoc);
+		if (FirstCameraTarget)
+			CheckScreenLocation(FirstLocation, FirstScreenLoc);
+		if (SecondCameraTarget)
+			CheckScreenLocation(SecondLocation, SecondScreenLoc);
 
-	GEngine->AddOnScreenDebugMessage(-1, 0.3f, FColor::Yellow, mustZoomOut ? "True" : "False");
+		if (mustZoomOut)
+			ZoomOut(DeltaTime);
+		else if (targetsAtCenter == targetCount)
+			ZoomIn(DeltaTime);
 
-	FinalOffset = BaseCameraOffset + ZoomOffset;
-	FinalOffset.X = FMath::Clamp(FinalOffset.X, MaxCameraOffset.X, MinCameraOffset.X);
-	FinalOffset.Z = FMath::Clamp(FinalOffset.Z, MinCameraOffset.Z, MaxCameraOffset.Z);
+		FinalOffset = BaseCameraOffset + ZoomOffset;
+		FinalOffset.X = FMath::Clamp(FinalOffset.X, MaxCameraOffset.X, MinCameraOffset.X);
+		FinalOffset.Z = FMath::Clamp(FinalOffset.Z, MinCameraOffset.Z, MaxCameraOffset.Z);
 
-	TargetLocation = AverageLocation + FinalOffset;
-	FollowCamera->SetActorLocation(FMath::Lerp(FollowCamera->GetActorLocation(), TargetLocation, CameraLerp * DeltaTime));	
+		TargetLocation = AverageLocation + FinalOffset;
+		FollowCamera->SetActorLocation(FMath::Lerp(FollowCamera->GetActorLocation(), TargetLocation, CameraLerp * DeltaTime));
+	}
 }
