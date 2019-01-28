@@ -8,6 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "CustomGameInstance.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AHamelinCharacter
@@ -40,6 +41,26 @@ void AHamelinCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AHamelinCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AHamelinCharacter::MoveRight);
+	PlayerInputComponent->BindAction("Focus", IE_Pressed, this, &AHamelinCharacter::Focus);
+	PlayerInputComponent->BindAction("Focus", IE_Released, this, &AHamelinCharacter::StopFocus);
+
+	PlayerInputComponent->BindAction("FirstTarget", IE_Pressed, this, &AHamelinCharacter::FirstTarget);
+	PlayerInputComponent->BindAction("SecondTarget", IE_Pressed, this, &AHamelinCharacter::SecondTarget);
+	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &AHamelinCharacter::Attack);
+	PlayerInputComponent->BindAction("Follow", IE_Pressed, this, &AHamelinCharacter::Follow);
+}
+
+void AHamelinCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	UCustomGameInstance* SGI = nullptr;
+	if (GetWorld())
+		SGI = Cast<UCustomGameInstance>(GetWorld()->GetGameInstance());
+	if (SGI)
+	{
+		FluteMan = SGI->FluteMan;
+	}
 }
 
 void AHamelinCharacter::MoveForward(float Value)
@@ -53,6 +74,20 @@ void AHamelinCharacter::MoveForward(float Value)
 		// get forward vector
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		AddMovementInput(Direction, Value);
+		UPawnMovementComponent* MovementComponent = GetMovementComponent();
+		
+		if (MovementComponent)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Has component"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("No component"));
+		}
+
+
+		UE_LOG(LogTemp, Warning, TEXT("Value is %f"), Value);
+		UE_LOG(LogTemp, Warning, TEXT("Direction is %s"), *Direction.ToString());
 	}
 }
 
@@ -68,5 +103,32 @@ void AHamelinCharacter::MoveRight(float Value)
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		// add movement in that direction
 		AddMovementInput(Direction, Value);
+		//UE_LOG(LogTemp, Warning, TEXT("Result is %s"), *Direction.ToString())
 	}
+}
+
+void AHamelinCharacter::Focus()
+{
+	FluteMan->OnFocused.Broadcast(true);
+}
+
+void AHamelinCharacter::StopFocus()
+{
+	FluteMan->OnFocused.Broadcast(false);
+}
+
+void AHamelinCharacter::FirstTarget()
+{
+}
+
+void AHamelinCharacter::SecondTarget()
+{
+}
+
+void AHamelinCharacter::Attack()
+{
+}
+
+void AHamelinCharacter::Follow()
+{
 }

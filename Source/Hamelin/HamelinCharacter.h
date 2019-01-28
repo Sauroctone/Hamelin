@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "FluteManager.h"
 #include "HamelinCharacter.generated.h"
 
 UCLASS(config=Game)
@@ -28,10 +29,21 @@ protected:
 	/** Called for side to side input */
 	void MoveRight(float Value);
 
+	void Focus();
+	void StopFocus();
+	void FirstTarget();
+	void SecondTarget();
+	void Attack();
+	void Follow();
+
+private:
+	AFluteManager * FluteMan;
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// End of APawn interface
+	virtual void BeginPlay() override;
 
 public:
 	///** Returns CameraBoom subobject **/
