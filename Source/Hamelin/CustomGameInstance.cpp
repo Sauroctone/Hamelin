@@ -5,6 +5,8 @@
 
 void UCustomGameInstance::OnStart()
 {
+	Super::OnStart();
+
 	if (GetWorld())
 	{
 		for (TActorIterator<AFluteManager> Itr(GetWorld()); Itr; ++Itr) 

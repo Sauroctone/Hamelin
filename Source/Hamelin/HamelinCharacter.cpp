@@ -52,6 +52,8 @@ void AHamelinCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 
 void AHamelinCharacter::BeginPlay()
 {
+	Super::BeginPlay();
+
 	UCustomGameInstance* SGI = nullptr;
 	if (GetWorld())
 		SGI = Cast<UCustomGameInstance>(GetWorld()->GetGameInstance());
