@@ -39,6 +39,14 @@ void ARatManager::DestroyRat(ARatAIController* DestroyedRat)
 	
 }
 
+void ARatManager::TransmitOrder(const FRatsOrder Order)
+{
+	for (ARatAIController* Rat : ControlledRats)
+	{
+		Rat->RecieveOrder(Order);
+	}
+}
+
 // Called every frame
 void ARatManager::Tick(float DeltaTime)
 {
@@ -49,7 +57,6 @@ void ARatManager::Tick(float DeltaTime)
 	{
 		timer = 0;
 		CreateRat(SpawnTarget);
-		Debug();
 	}
 
 }

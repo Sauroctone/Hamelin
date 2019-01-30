@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "RatsAI/RatAIController.h"
 #include "RatsAI/RatCharacter.h"
+#include "RatsOrder.h"
 #include "RatManager.generated.h"
 
 
@@ -23,6 +24,7 @@ class HAMELIN_API ARatManager : public AActor
 		//RAT MANAGEMENT
 		void CreateRat(AActor* TargetPoint); //Spawns a character and an ai controller to possess it
 		void DestroyRat(ARatAIController* DestroyedRat); //Free the memory
+		void TransmitOrder(const FRatsOrder Order);
 
 		//Debug
 		void Debug();
