@@ -13,11 +13,12 @@ UCLASS()
 class HAMELIN_API URatState_Acting : public URatState
 {
 	GENERATED_BODY()
-
-	/*virtual URatState* RecieveOrder(FRatsOrder Order) override;
-	virtual void Update() override;
-	virtual void OnStateEnter() override;
-	virtual void OnStateExit() override;*/
+	
+	public :
+		virtual URatState* RecieveOrder(FRatsOrder Order) override;
+		virtual void OnStateEnter(ARatAIController * PassedOwnerController) override;
+		virtual void Update(float DeltaTime) override;
+		virtual void OnStateExit() override;
 	
 	
 };

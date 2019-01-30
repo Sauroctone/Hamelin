@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "AIController.h"
 #include "Runtime/AIModule/Classes/Navigation/CrowdFollowingComponent.h"
-#include "RatsAI/RatState.h"
 #include "RatsOrder.h"
 #include "RatAIController.generated.h"
 
@@ -22,7 +21,7 @@ class HAMELIN_API ARatAIController : public AAIController
 		void RecieveOrder(const FRatsOrder order);
 	
 	private :
-		URatState* CurrentState;
+		class URatState* CurrentState;
 		FRatsOrder CurrentOrder;
 	
 	

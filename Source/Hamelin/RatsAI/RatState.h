@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "RatsAI/RatAIController.h"
 #include "RatsOrder.h"
 #include "RatState.generated.h"
 
@@ -19,9 +20,12 @@ class HAMELIN_API URatState : public UObject
 	public:
 		URatState(const FObjectInitializer& ObjectInitializer);
 		virtual URatState* RecieveOrder(FRatsOrder Order);
-		virtual void Update();
-		virtual void OnStateEnter();
+		virtual void OnStateEnter(ARatAIController * PassedOwnerController);
+		virtual void Update(float DeltaTime);
 		virtual void OnStateExit();
+
+	protected:
+		ARatAIController* OwnersController = nullptr;
 	
 	
 };

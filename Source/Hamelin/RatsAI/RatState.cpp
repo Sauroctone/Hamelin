@@ -11,11 +11,12 @@ URatState* URatState::RecieveOrder(FRatsOrder Order)
 	return nullptr;
 }
 
-void URatState::OnStateEnter()
+void URatState::OnStateEnter(ARatAIController * PassedOwnerController)
 {
+	OwnersController = PassedOwnerController;
 }
 
-void URatState::Update()
+void URatState::Update(float DeltaTime)
 {
 }
 

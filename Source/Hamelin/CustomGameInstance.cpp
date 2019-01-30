@@ -6,12 +6,17 @@
 void UCustomGameInstance::OnStart()
 {
 	Super::OnStart();
-
-	if (GetWorld())
+	UWorld* World = GetWorld();
+	if (World)
 	{
-		for (TActorIterator<AFluteManager> Itr(GetWorld()); Itr; ++Itr) 
+		for (TActorIterator<AFluteManager> Itr(World); Itr; ++Itr) 
 		{
 			FluteMan = *Itr;
+		}
+
+		for (TActorIterator<ARatManager> Itr(World); Itr; ++Itr)
+		{	
+			RatMan = *Itr;
 		}
 	}
 }

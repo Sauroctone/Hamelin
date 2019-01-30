@@ -14,9 +14,10 @@ class HAMELIN_API URatState_Moving : public URatState_Acting
 {
 	GENERATED_BODY()
 	
-	/*virtual void Update() override;
-	virtual void OnStateEnter() override;
-	virtual void OnStateExit() override;*/
+	public :
+		virtual void OnStateEnter(ARatAIController * PassedOwnerController) override;
+		virtual void Update(float DeltaTime) override;
+		virtual void OnStateExit() override;
 	
 	
 };

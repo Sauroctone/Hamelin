@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
 #include "FluteManager.h"
+#include "RatsAI/RatManager.h"
 #include "CustomGameInstance.generated.h"
 
 /**
@@ -17,6 +18,7 @@ class HAMELIN_API UCustomGameInstance : public UGameInstance
 	
 public:
 	class AFluteManager * FluteMan;
+	class ARatManager * RatMan;
 
 protected:
 	virtual void OnStart() override;

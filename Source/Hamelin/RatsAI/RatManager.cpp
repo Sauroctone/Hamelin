@@ -52,12 +52,12 @@ void ARatManager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	timer += DeltaTime;
+	/*timer += DeltaTime;
 	if (timer >= SpawnRate)
 	{
 		timer = 0;
 		CreateRat(SpawnTarget);
-	}
+	}*/
 
 }
 
