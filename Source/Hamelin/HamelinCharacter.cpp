@@ -8,6 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "CustomGameInstance.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AHamelinCharacter
@@ -17,10 +18,6 @@ AHamelinCharacter::AHamelinCharacter()
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
-	// set our turn rates for input
-	BaseTurnRate = 45.f;
-	BaseLookUpRate = 45.f;
-
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -29,19 +26,6 @@ AHamelinCharacter::AHamelinCharacter()
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // ...at this rotation rate
-	GetCharacterMovement()->JumpZVelocity = 600.f;
-	GetCharacterMovement()->AirControl = 0.2f;
-
-	// Create a camera boom (pulls in towards the player if there is a collision)
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character	
-	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
-
-	// Create a follow camera
-	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
-	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
@@ -54,54 +38,29 @@ void AHamelinCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 {
 	// Set up gameplay key bindings
 	check(PlayerInputComponent);
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
-	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AHamelinCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AHamelinCharacter::MoveRight);
+	PlayerInputComponent->BindAction("Focus", IE_Pressed, this, &AHamelinCharacter::Focus);
+	PlayerInputComponent->BindAction("Focus", IE_Released, this, &AHamelinCharacter::StopFocus);
 
-	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
-	// "turn" handles devices that provide an absolute delta, such as a mouse.
-	// "turnrate" is for devices that we choose to treat as a rate of change, such as an analog joystick
-	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
-	PlayerInputComponent->BindAxis("TurnRate", this, &AHamelinCharacter::TurnAtRate);
-	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
-	PlayerInputComponent->BindAxis("LookUpRate", this, &AHamelinCharacter::LookUpAtRate);
-
-	// handle touch devices
-	PlayerInputComponent->BindTouch(IE_Pressed, this, &AHamelinCharacter::TouchStarted);
-	PlayerInputComponent->BindTouch(IE_Released, this, &AHamelinCharacter::TouchStopped);
-
-	// VR headset functionality
-	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AHamelinCharacter::OnResetVR);
+	PlayerInputComponent->BindAction("FirstTarget", IE_Pressed, this, &AHamelinCharacter::FirstTarget);
+	PlayerInputComponent->BindAction("SecondTarget", IE_Pressed, this, &AHamelinCharacter::SecondTarget);
+	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &AHamelinCharacter::Attack);
+	PlayerInputComponent->BindAction("Follow", IE_Pressed, this, &AHamelinCharacter::Follow);
 }
 
-
-void AHamelinCharacter::OnResetVR()
+void AHamelinCharacter::BeginPlay()
 {
-	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
-}
+	Super::BeginPlay();
 
-void AHamelinCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
-{
-		Jump();
-}
-
-void AHamelinCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
-{
-		StopJumping();
-}
-
-void AHamelinCharacter::TurnAtRate(float Rate)
-{
-	// calculate delta for this frame from the rate information
-	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
-}
-
-void AHamelinCharacter::LookUpAtRate(float Rate)
-{
-	// calculate delta for this frame from the rate information
-	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+	UCustomGameInstance* SGI = nullptr;
+	if (GetWorld())
+		SGI = Cast<UCustomGameInstance>(GetWorld()->GetGameInstance());
+	if (SGI)
+	{
+		FluteMan = SGI->FluteMan;
+	}
 }
 
 void AHamelinCharacter::MoveForward(float Value)
@@ -115,6 +74,9 @@ void AHamelinCharacter::MoveForward(float Value)
 		// get forward vector
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		AddMovementInput(Direction, Value);
+
+		//UE_LOG(LogTemp, Warning, TEXT("Value is %f"), Value);
+		//UE_LOG(LogTemp, Warning, TEXT("Direction is %s"), *Direction.ToString());
 	}
 }
 
@@ -130,5 +92,32 @@ void AHamelinCharacter::MoveRight(float Value)
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		// add movement in that direction
 		AddMovementInput(Direction, Value);
+		//UE_LOG(LogTemp, Warning, TEXT("Result is %s"), *Direction.ToString())
 	}
+}
+
+void AHamelinCharacter::Focus()
+{
+	FluteMan->OnFocused.Broadcast(true);
+}
+
+void AHamelinCharacter::StopFocus()
+{
+	FluteMan->OnFocused.Broadcast(false);
+}
+
+void AHamelinCharacter::FirstTarget()
+{
+}
+
+void AHamelinCharacter::SecondTarget()
+{
+}
+
+void AHamelinCharacter::Attack()
+{
+}
+
+void AHamelinCharacter::Follow()
+{
 }
