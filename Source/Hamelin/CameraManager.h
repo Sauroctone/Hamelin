@@ -74,6 +74,12 @@ private:
 	FVector FirstLocation;
 	FVector SecondLocation;
 	FVector AverageLocation;
+	float playerViewX;
+	float playerViewY;
+	float firstViewX;
+	float firstViewY;
+	float secondViewX;
+	float secondViewY;
 	int targetCount;
 	bool mustZoomOut;
 	FVector ZoomOffset;
@@ -82,11 +88,13 @@ private:
 	bool isFocused;
 
 	void SetAverageTargetLocation();
-	void CheckScreenLocation(FVector _worldLoc, FVector2D &_screenLoc);
+	void CheckScreenLocation(FVector _worldLoc, FVector2D &_screenLoc, float &viewLocX, float &viewLocY);
 	bool IsTowardsEdgeOfScreen(float viewLocX, float viewLocY);
 	int IsTowardsCenterOfScreen(float viewLocX, float viewLocY);
+	bool IsOutOfCamera(float viewLocX, float viewLocY);
 	void ZoomOut(float DeltaTime);
 	void ZoomIn(float DeltaTime);
+	void ForgetTargetsOutOfFrame();
 
 public:	
 	// Called every frame

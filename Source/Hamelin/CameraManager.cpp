@@ -51,11 +51,12 @@ void ACameraManager::SetAverageTargetLocation()
 	AverageLocation = (PlayerLocation + FirstLocation + SecondLocation) / targetCount;
 }
 
-void ACameraManager::CheckScreenLocation(FVector _worldLoc, FVector2D &_screenLoc)
+void ACameraManager::CheckScreenLocation(FVector _worldLoc, FVector2D &_screenLoc, float &viewLocX, float &viewLocY)
 {
 	PlayerController->ProjectWorldLocationToScreen(_worldLoc, _screenLoc);
-	float viewLocX = _screenLoc.X / screenWidth;
-	float viewLocY = _screenLoc.Y / screenHeight;
+	viewLocX = _screenLoc.X / screenWidth;
+	viewLocY = _screenLoc.Y / screenHeight;
+
 	UE_LOG(LogTemp, Warning, TEXT("%f, %f"), viewLocX, viewLocY);
 	
 	if (!mustZoomOut)
@@ -84,6 +85,15 @@ int ACameraManager::IsTowardsCenterOfScreen(float viewLocX, float viewLocY)
 	return 0;
 }
 
+bool ACameraManager::IsOutOfCamera(float viewLocX, float viewLocY)
+{
+	if (viewLocX < 0 || viewLocX > 1 || viewLocY < 0 || viewLocY > 1)
+	{
+		return true;
+	}
+	return false;
+}
+
 void ACameraManager::ZoomOut(float DeltaTime)
 {
 	ZoomOffset.Z += ZoomOutSpeedZ * DeltaTime;
@@ -94,6 +104,40 @@ void ACameraManager::ZoomIn(float DeltaTime)
 {
 	ZoomOffset.Z -= ZoomInSpeedZ * DeltaTime;
 	ZoomOffset.X += ZoomInSpeedX * DeltaTime;
+}
+
+void ACameraManager::ForgetTargetsOutOfFrame()
+{
+	if (FinalOffset.X == MaxCameraOffset.X)
+	{
+		if (IsOutOfCamera(playerViewX, playerViewY))
+		{
+			if (FirstCameraTarget)
+			{
+				if (SecondCameraTarget && FVector::Dist(FirstLocation, PlayerLocation) < FVector::Dist(SecondLocation, PlayerLocation))
+				{
+					SecondCameraTarget = nullptr;
+				}
+				else
+				{
+					FirstCameraTarget = nullptr;
+				}
+
+				targetCount--;
+			}
+		}
+
+		if (FirstCameraTarget && IsOutOfCamera(firstViewX, firstViewY))
+		{
+			FirstCameraTarget = nullptr;
+			targetCount--;
+		}
+		if (SecondCameraTarget && IsOutOfCamera(secondViewX, secondViewY))
+		{
+			SecondCameraTarget = nullptr;
+			targetCount--;
+		}
+	}
 }
 
 void ACameraManager::OnFocused(bool _isFocused)
@@ -115,11 +159,11 @@ void ACameraManager::Tick(float DeltaTime)
 
 		targetsAtCenter = 0;
 		mustZoomOut = false;
-		CheckScreenLocation(PlayerLocation, PlayerScreenLoc);
+		CheckScreenLocation(PlayerLocation, PlayerScreenLoc, playerViewX, playerViewY);
 		if (FirstCameraTarget)
-			CheckScreenLocation(FirstLocation, FirstScreenLoc);
-		//if (SecondCameraTarget)
-		//	CheckScreenLocation(SecondLocation, SecondScreenLoc);
+			CheckScreenLocation(FirstLocation, FirstScreenLoc, firstViewX, firstViewY);
+		if (SecondCameraTarget)
+			CheckScreenLocation(SecondLocation, SecondScreenLoc, secondViewX, secondViewY);
 
 		UE_LOG(LogTemp, Warning, TEXT("targets at center : %d"), targetsAtCenter);
 		UE_LOG(LogTemp, Warning, TEXT("target count : %d"), targetCount);
@@ -131,10 +175,20 @@ void ACameraManager::Tick(float DeltaTime)
 			ZoomIn(DeltaTime);
 
 		FinalOffset = BaseCameraOffset + ZoomOffset;
-		FinalOffset.X = FMath::Clamp(FinalOffset.X, MaxCameraOffset.X, MinCameraOffset.X);
-		FinalOffset.Z = FMath::Clamp(FinalOffset.Z, MinCameraOffset.Z, MaxCameraOffset.Z);
+
+		if (FinalOffset.X < MaxCameraOffset.X)
+			FinalOffset.X = MaxCameraOffset.X;
+		else if (FinalOffset.X > MinCameraOffset.X)
+			FinalOffset.X = MinCameraOffset.X;
+
+		if (FinalOffset.Z > MaxCameraOffset.Z)
+			FinalOffset.Z = MaxCameraOffset.Z;
+		else if (FinalOffset.Z < MinCameraOffset.Z)
+			FinalOffset.Z = MinCameraOffset.Z;
 
 		TargetLocation = AverageLocation + FinalOffset;
 		FollowCamera->SetActorLocation(FMath::Lerp(FollowCamera->GetActorLocation(), TargetLocation, CameraLerp * DeltaTime));
+
+		ForgetTargetsOutOfFrame();
 	}
 }
