@@ -74,20 +74,9 @@ void AHamelinCharacter::MoveForward(float Value)
 		// get forward vector
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		AddMovementInput(Direction, Value);
-		UPawnMovementComponent* MovementComponent = GetMovementComponent();
-		
-		if (MovementComponent)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Has component"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("No component"));
-		}
 
-
-		UE_LOG(LogTemp, Warning, TEXT("Value is %f"), Value);
-		UE_LOG(LogTemp, Warning, TEXT("Direction is %s"), *Direction.ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("Value is %f"), Value);
+		//UE_LOG(LogTemp, Warning, TEXT("Direction is %s"), *Direction.ToString());
 	}
 }
 

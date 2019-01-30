@@ -35,9 +35,9 @@ public:
 	float CameraLerp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float ZoomOutScreenDivisor;
+	float zoomOutDistanceFromBorder;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float ZoomInScreenDivisor;
+	float zoomInDistanceFromCenter;
 	UPROPERTY(EditAnywhere)
 	float ZoomOutSpeedZ;
 	UPROPERTY(EditAnywhere)
@@ -83,8 +83,8 @@ private:
 
 	void SetAverageTargetLocation();
 	void CheckScreenLocation(FVector _worldLoc, FVector2D &_screenLoc);
-	bool IsTowardsEdgeOfScreen(FVector2D _screenLoc);
-	int IsTowardsCenterOfScreen(FVector2D _screenLoc);
+	bool IsTowardsEdgeOfScreen(float viewLocX, float viewLocY);
+	int IsTowardsCenterOfScreen(float viewLocX, float viewLocY);
 	void ZoomOut(float DeltaTime);
 	void ZoomIn(float DeltaTime);
 

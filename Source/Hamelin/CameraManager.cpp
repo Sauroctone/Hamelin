@@ -48,28 +48,36 @@ void ACameraManager::SetAverageTargetLocation()
 	PlayerLocation = PlayerTarget->GetActorLocation();
 	FirstLocation = FirstCameraTarget ? FirstCameraTarget->GetActorLocation() : FVector::ZeroVector;
 	SecondLocation = SecondCameraTarget ? SecondCameraTarget->GetActorLocation() : FVector::ZeroVector;
-	AverageLocation = (PlayerTarget->GetActorLocation() + FirstLocation + SecondLocation) / targetCount;
+	AverageLocation = (PlayerLocation + FirstLocation + SecondLocation) / targetCount;
 }
 
 void ACameraManager::CheckScreenLocation(FVector _worldLoc, FVector2D &_screenLoc)
 {
 	PlayerController->ProjectWorldLocationToScreen(_worldLoc, _screenLoc);
-	mustZoomOut = IsTowardsEdgeOfScreen(_screenLoc);
-	targetsAtCenter += mustZoomOut ? 0 : IsTowardsCenterOfScreen(_screenLoc);
+	float viewLocX = _screenLoc.X / screenWidth;
+	float viewLocY = _screenLoc.Y / screenHeight;
+	UE_LOG(LogTemp, Warning, TEXT("%f, %f"), viewLocX, viewLocY);
+	
+	if (!mustZoomOut)
+	{
+		mustZoomOut = IsTowardsEdgeOfScreen(viewLocX, viewLocY);
+	}
+	
+	targetsAtCenter += IsTowardsCenterOfScreen(viewLocX, viewLocY);
 }
 
-bool ACameraManager::IsTowardsEdgeOfScreen(FVector2D _screenLoc)
+bool ACameraManager::IsTowardsEdgeOfScreen(float viewLocX, float viewLocY)
 {
-	if (_screenLoc.X < screenWidth / ZoomOutScreenDivisor || _screenLoc.X > screenWidth - screenWidth / ZoomOutScreenDivisor || _screenLoc.Y < screenHeight / ZoomOutScreenDivisor || _screenLoc.Y > screenHeight - screenHeight / ZoomOutScreenDivisor)
+	if (viewLocX < 0 + zoomOutDistanceFromBorder || viewLocX > 1 - zoomOutDistanceFromBorder || viewLocY < 0 + zoomOutDistanceFromBorder || viewLocY > 1 - zoomOutDistanceFromBorder)
 	{
 		return true;
 	}
 	return false;
 }
 
-int ACameraManager::IsTowardsCenterOfScreen(FVector2D _screenLoc)
+int ACameraManager::IsTowardsCenterOfScreen(float viewLocX, float viewLocY)
 {
-	if (_screenLoc.X > 0 - screenWidth / ZoomInScreenDivisor || _screenLoc.X < 0 + screenWidth / ZoomInScreenDivisor || _screenLoc.Y > 0 + screenHeight / ZoomInScreenDivisor || _screenLoc.Y < 0 + screenHeight / ZoomInScreenDivisor)
+	if (viewLocX > 0.5f - zoomInDistanceFromCenter && viewLocX < 0.5f + zoomInDistanceFromCenter && viewLocY > 0.5f - zoomInDistanceFromCenter && viewLocY < 0.5f + zoomInDistanceFromCenter)
 	{
 		return 1;
 	}
@@ -80,14 +88,12 @@ void ACameraManager::ZoomOut(float DeltaTime)
 {
 	ZoomOffset.Z += ZoomOutSpeedZ * DeltaTime;
 	ZoomOffset.X -= ZoomOutSpeedX * DeltaTime;
-	/*UKismetSystemLibrary::PrintString(GetWorld(), "zoom out", false, true, FColor::Yellow, .1f);*/
 }
 
 void ACameraManager::ZoomIn(float DeltaTime)
 {
 	ZoomOffset.Z -= ZoomInSpeedZ * DeltaTime;
 	ZoomOffset.X += ZoomInSpeedX * DeltaTime;
-	/*UKismetSystemLibrary::PrintString(GetWorld(), "zoom in", false, true, FColor::Yellow, .1f);*/
 }
 
 void ACameraManager::OnFocused(bool _isFocused)
@@ -104,17 +110,20 @@ void ACameraManager::Tick(float DeltaTime)
 	if (!isFocused)
 	{
 		PlayerController->GetViewportSize(screenWidth, screenHeight);
-		//UKismetSystemLibrary::PrintString(GetWorld(), FString::FromInt(screenWidth), false, true, FColor::Yellow, .1f);
-		//UKismetSystemLibrary::PrintString(GetWorld(), FString::FromInt(screenHeight), false, true, FColor::Yellow, .1f);
 
 		SetAverageTargetLocation();
 
 		targetsAtCenter = 0;
+		mustZoomOut = false;
 		CheckScreenLocation(PlayerLocation, PlayerScreenLoc);
 		if (FirstCameraTarget)
 			CheckScreenLocation(FirstLocation, FirstScreenLoc);
-		if (SecondCameraTarget)
-			CheckScreenLocation(SecondLocation, SecondScreenLoc);
+		//if (SecondCameraTarget)
+		//	CheckScreenLocation(SecondLocation, SecondScreenLoc);
+
+		UE_LOG(LogTemp, Warning, TEXT("targets at center : %d"), targetsAtCenter);
+		UE_LOG(LogTemp, Warning, TEXT("target count : %d"), targetCount);
+		//UKismetSystemLibrary::PrintString(GetWorld(), mustZoomOut ? "Zoom out" : "No zoom", false, true);
 
 		if (mustZoomOut)
 			ZoomOut(DeltaTime);
